@@ -1,7 +1,23 @@
-use sqlx::PgPool;
+use sqlx::{PgPool, postgres::PgPoolOptions};
 
 pub mod user;
 
 pub struct Store { 
-    pool : PgPool
+    pub pool : PgPool
+}
+
+impl Store {
+    pub fn new(pool : PgPool)-> Self{
+        Store { pool }
+    }
+
+    pub async fn connect(url : &str)-> Result<Self, sqlx::Error>{
+        let pool = PgPoolOptions::new()
+            .max_connections(5)
+            .connect(url)
+            .await?;
+
+        Ok(Store { pool })
+    }
+
 }

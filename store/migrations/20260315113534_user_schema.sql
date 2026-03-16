@@ -1,6 +1,6 @@
 -- Add migration script here
 CREATE TABLE users(
-    id UUID PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email VARCHAR(30) NOT NULL,
     password TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -11,7 +11,7 @@ CREATE TABLE users(
 -- when i will need balances from user i will query 
 -- SELECT * FROM balances WHERE user_id = '...' 
 CREATE TABLE asset (
-    id UUID PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     mint_address VARCHAR(32),
     decimals INT,
     name VARCHAR(50),
@@ -22,7 +22,7 @@ CREATE TABLE asset (
 );
 
 CREATE TABLE balance(
-    id UUID PRIMARY KEY ,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid() ,
     amount BIGINT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ, 

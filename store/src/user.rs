@@ -1,7 +1,9 @@
 use serde::{Deserialize,Serialize};
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
-use sqlx::FromRow;
+use sqlx::{FromRow, PgPool};
+
+use crate::Store;
 
 #[derive( Serialize,Debug, FromRow)]
 pub struct User {
@@ -35,4 +37,42 @@ pub struct Balance {
     updated_at : Option<DateTime<Utc>>,
     user_id : Uuid,
     asset_id : Uuid
+}
+
+impl Store {
+    pub async fn create_user(
+        &self,
+        email : &str,
+        password_hash : &str,
+        public_key : Option<&str>) -> Result<User, sqlx::Error>{
+        
+        let user = sqlx::query_as::<_,User>(
+            r#"
+            INSERT INTO users(email, password, public_key)
+            VALUES ( $1,$2,$3)
+            RETURNING *
+            "#
+        )
+        .bind(email)
+        .bind(password_hash)
+        .bind(public_key)
+        .fetch_one(&self.pool)
+        .await?;
+        
+        Ok(user)
+    }
+
+    pub async fn get_user_by_email(
+        &self,
+        email : &str,
+    )-> Result<User, sqlx::Error>{
+        let user = sqlx::query_as::<_,User>(
+            r#"
+                SELECT * FROM users WHERE email=($1)
+            "#
+        ).bind(email)
+        .fetch_one(&self.pool)
+        .await?;
+    Ok(user)
+    }
 }
