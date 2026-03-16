@@ -2,6 +2,7 @@ use sqlx::{PgPool, postgres::PgPoolOptions};
 
 pub mod user;
 
+#[derive(Debug,Clone)]
 pub struct Store { 
     pub pool : PgPool
 }
