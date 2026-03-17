@@ -4,7 +4,7 @@ use std::error::Error;
 use axum::{Router, routing::post};
 use store::Store;
 
-use routes::user::signup_handler;
+use routes::user::{signup_handler, signin_handler};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -14,6 +14,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let app = Router::new()
         .route("/api/v1/signup", post(signup_handler))
+        .route("/api/v1/signin", post(signin_handler))
         .with_state(store);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:4444").await.unwrap();

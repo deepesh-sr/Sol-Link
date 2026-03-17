@@ -1,3 +1,5 @@
+use core::str;
+
 use serde::{Deserialize,Serialize};
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
@@ -74,5 +76,15 @@ impl Store {
         .fetch_one(&self.pool)
         .await?;
     Ok(user)
+    }
+}
+
+impl User {
+    pub fn get_password(&self) -> &str{
+        &self.password
+    }
+
+    pub fn get_id(&self)-> &Uuid{
+        &self.id
     }
 }
