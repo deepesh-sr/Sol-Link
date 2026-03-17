@@ -1,8 +1,9 @@
-use axum::{Json, Router, extract::State, routing::post};
+use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
 use serde::Deserialize;
 use std::error::Error;
 use std::net::SocketAddr;
 use store::Store;
+use bcrypt::{hash,DEFAULT_COST};
 
 #[derive(Deserialize)]
 struct SignupRequest {
@@ -16,7 +17,9 @@ async fn signup_handler(
     Json(payload): Json<SignupRequest>,
 ) -> Result<Json<store::user::User>, (axum::http::StatusCode, String)> {
 
-    let user = store.create_user(&payload.email, &payload.password, payload.public_key.as_deref()).await.map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    let hashed_password = hash(payload.password , DEFAULT_COST).map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Failed to hash password".to_string()))?;
+
+    let user = store.create_user(&payload.email, &hashed_password, payload.public_key.as_deref()).await.map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     Ok(Json(user))
 }
