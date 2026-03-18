@@ -21,8 +21,15 @@ impl FromRequestParts<Store> for Claims {
             .to_str()
             .map_err(|_| (StatusCode::UNAUTHORIZED, "Invalid Header".to_string()))?;
 
+         if !auth_header.starts_with("Bearer ") {
+            return Err((StatusCode::UNAUTHORIZED, "Invalid Header Format".to_string()));
+        }
+
+        let token = &auth_header[7..];
+
+
        let token_data = jsonwebtoken::decode::<Claims>(
-            &auth_header,
+            &token,
             &DecodingKey::from_secret(secret.as_bytes()),
             &Validation::new(Algorithm::HS256)
             ).map_err(|_| (StatusCode::UNAUTHORIZED , "Invalid token".to_string()))?;
