@@ -8,9 +8,12 @@ async-trait = "0.1.89"
 axum = "0.8.8"
 bcrypt = "0.19.0"
 chrono = "0.4.44"
-jsonwebtoken = "10.3.0"
+dotenvy = "0.15.7"
+jsonwebtoken = { version = "10", features = ["rust_crypto"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
+solana-client = "3.1.10"
+solana-sdk = "4.0.1"
 store = { version = "0.1.0", path = "../store" }
 tokio = {version="1.50.0" , features = ["rt-multi-thread"]}
 tower-http = { version = "0.6.8", features = ["cors", "trace"] }
