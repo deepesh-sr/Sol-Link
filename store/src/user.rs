@@ -92,4 +92,8 @@ impl User {
     pub fn get_id(&self) -> &Uuid {
         &self.id
     }
+
+    pub fn get_pubkey(&self)-> Option<&str>{
+        self.public_key.as_deref()
+    }
 }

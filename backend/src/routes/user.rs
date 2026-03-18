@@ -29,7 +29,11 @@ pub struct Claims {
     sub: String, // for user_id
     exp: usize,  // expiry check krne k liye ( unix timestamp )
 }
-
+impl Claims {
+    pub fn get_sub(&self)-> Result<Uuid,String>{
+        Ok(Uuid::parse_str(&self.sub).map_err(|e| e.to_string())?)
+    }
+}
 pub async fn signup_handler(
     State(store): State<Store>,
     Json(payload): Json<SignupRequest>,
