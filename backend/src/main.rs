@@ -5,7 +5,7 @@ use axum::{Router, routing::{get, post}};
 use store::Store;
 
 use routes::user::{signup_handler, signin_handler , get_user};
-use crate::routes::solana::get_sol_balance;
+use crate::routes::solana::{get_quote, get_sol_balance};
 
 
 
@@ -21,7 +21,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .route("/api/v1/signup", post(signup_handler))
         .route("/api/v1/signin", post(signin_handler))
         .route("/api/v1/user", get(get_user))
-        .route("/api/sol", get(get_sol_balance))
+        .route("/api/v1/sol", get(get_sol_balance))
+        .route("/api/v1/quote", get(get_quote))
         .with_state(store);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:4444").await.unwrap();
