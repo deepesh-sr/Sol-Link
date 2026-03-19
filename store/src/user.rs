@@ -40,6 +40,16 @@ pub struct Balance {
     asset_id: Uuid,
 }
 
+#[derive(Deserialize, Serialize, FromRow, Debug)]
+pub struct UserBalance{
+    pub amount: i64,
+    pub mint_address: String,
+    pub decimals: i32,
+    pub name: String,
+    pub symbol: String,
+    pub logo_url: Option<String>,
+}
+
 impl Store {
     pub async fn create_user(
         &self,
@@ -82,6 +92,90 @@ impl Store {
 
         Ok(user)
     }
+
+    pub async fn upsert_asset(
+        &self,
+        mint_address: &str,
+        decimals: i32,
+        name: &str,
+        symbol: &str,
+        logo_url: Option<&str>,
+    ) -> Result<Asset, sqlx::Error> {
+
+        let asset = sqlx::query_as::<_,Asset>(
+            r#"
+            INSERT INTO asset (mint_address, decimals, name, symbol, logo_url)
+            VALUES ($1,$2,$3,$4,$5)
+            ON CONFLICT (mint_address) DO UPDATE 
+                SET name = EXCLUDED.name,
+                symbol = EXCLUDED.symbol,
+                logo_url = EXCLUDED.logo_url,
+                updated_at = NOW()
+            RETURNING *
+            "#
+        ).bind(mint_address)
+        .bind(decimals)
+        .bind(name)
+        .bind(symbol)
+        .bind(logo_url)
+        .fetch_one(&self.pool)
+        .await?;
+    Ok(asset)
+    }
+
+    pub async fn upsert_balance(
+        &self,
+        amount : i64, 
+        user_id : Uuid,
+        asset_id : Uuid
+    ) -> Result<Balance, sqlx::Error> {
+
+        let balance = sqlx::query_as::<_,Balance>(
+            r#"
+            INSERT INTO balance (amount, user_id, asset_id)
+            VALUES ($1,$2,$3)
+            ON CONFLICT (user_id, asset_id) DO UPDATE 
+                SET amount = EXCLUDED.amount,
+                    updated_at = NOW()
+            RETURNING *
+            "#
+        ).bind(amount)
+        .bind(user_id)
+        .bind(asset_id)
+        .fetch_one(&self.pool)
+        .await?;
+    Ok(balance)
+
+    }
+
+    pub async fn get_asset_by_mint(&self, mint_address : &str) -> Result<Asset , sqlx::Error>{
+        let asset =sqlx::query_as::<_,Asset>(
+            r#"
+            SELECT * FROM asset 
+            WHERE mint_address = $1
+            "#
+        ).bind(mint_address)
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok(asset)
+    }
+
+    pub async fn get_balance_by_user(&self,user_id : Uuid)->Result<Vec<UserBalance>, sqlx::Error>{
+        
+        let user_balance = sqlx::query_as::<_,UserBalance>(
+            r#"
+            SELECT  b.amount, a.mint_address, a.decimals, a.name, a.symbol, a.logo_url
+            FROM balance b
+            JOIN asset a ON b.asset_id = a.id
+            WHERE b.user_id = $1
+            "#
+        ).bind(user_id)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(user_balance)
+    }
 }
 
 impl User {
@@ -93,7 +187,7 @@ impl User {
         &self.id
     }
 
-    pub fn get_pubkey(&self)-> Option<&str>{
+    pub fn get_pubkey(&self) -> Option<&str> {
         self.public_key.as_deref()
     }
 }

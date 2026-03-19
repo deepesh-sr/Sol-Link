@@ -3,7 +3,10 @@ use bcrypt::{DEFAULT_COST, hash, verify};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{EncodingKey, Header, encode};
 use serde::{Deserialize, Serialize};
-use store::{Store, user::User};
+use store::{
+    Store,
+    user::{User, UserBalance},
+};
 use uuid::Uuid;
 
 #[derive(Deserialize)]
@@ -30,7 +33,7 @@ pub struct Claims {
     exp: usize,  // expiry check krne k liye ( unix timestamp )
 }
 impl Claims {
-    pub fn get_sub(&self)-> Result<Uuid,String>{
+    pub fn get_sub(&self) -> Result<Uuid, String> {
         Ok(Uuid::parse_str(&self.sub).map_err(|e| e.to_string())?)
     }
 }
@@ -108,4 +111,18 @@ pub async fn get_user(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     Ok(Json(user))
+}
+
+pub async fn get_balance_by_user(
+    claims: Claims,
+    State(store): State<Store>,
+) -> Result<Json<Vec<UserBalance>>, (StatusCode, String)> {
+    let uuid = Uuid::parse_str(&claims.sub)
+        .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid User Id".to_string()))?;
+    let user_balance = store
+        .get_balance_by_user(uuid)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    Ok(Json(user_balance))
 }
