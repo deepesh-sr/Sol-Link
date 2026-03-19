@@ -2391,10 +2391,13 @@ name = "mpc"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "chrono",
  "frost-ed25519",
  "reqwest 0.13.2",
+ "serde",
  "sqlx",
  "tokio",
+ "uuid",
 ]
 
 [[package]]
