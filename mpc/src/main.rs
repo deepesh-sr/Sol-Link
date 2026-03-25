@@ -12,7 +12,9 @@ use uuid::Uuid;
 pub mod routes;
 pub mod tss;
 
-struct Appstate {
+use routes::dkg::{dkg_route1_handler, dkg_route2_handler, dkg_round3_handler};
+
+pub struct Appstate {
     node_id: Identifier,
     dkg_round1_secrets: Mutex<HashMap<Uuid, dkg::round1::SecretPackage>>,
     dkg_round2_secrets: Mutex<HashMap<Uuid, dkg::round2::SecretPackage>>,
@@ -45,8 +47,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/dkg/round1", post(dkg_route1_handler))
         .route("/dkg/round2", post(dkg_route2_handler))
         .route("/dkg/round3", post(dkg_round3_handler))
-        .route("/sign/round1", post(sign_round1_handler))
-        .route("/sign/round2", post(sign_round2_handler))
+
+        // .route("/sign/round1", post(sign_round1_handler))
+        // .route("/sign/round2", post(sign_round2_handler))
         .with_state(state);
 
     let address = format!("0.0.0.0:{}",port);
