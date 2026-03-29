@@ -176,7 +176,22 @@ impl Store {
 
         Ok(user_balance)
     }
+
+    pub async fn update_user_pubkey(&self , user_id : Uuid, public_key: &str) -> Result<(), sqlx::Error> {
+        sqlx::query(r#"
+            UPDATE users 
+SET public_key = $1, updated_at = NOW() 
+WHERE id = $2
+
+        "#)
+    .bind(public_key)
+    .bind(user_id)
+    .execute(&self.pool).await?;
+    Ok(())
+    }
 }
+
+
 
 impl User {
     pub fn get_password(&self) -> &str {

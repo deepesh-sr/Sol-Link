@@ -9,6 +9,8 @@ use store::{
 };
 use uuid::Uuid;
 
+use crate::routes::mpc::orchestrate_dkg;
+
 #[derive(Deserialize)]
 pub struct SignupRequest {
     email: String,
@@ -56,7 +58,15 @@ pub async fn signup_handler(
         )
         .await
         .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-        
+    
+    let public_key = orchestrate_dkg(*user.get_id())
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    store.update_user_pubkey(*user.get_id(), &public_key)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
     Ok(Json(user))
 }
 
