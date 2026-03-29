@@ -56,7 +56,7 @@ pub async fn signup_handler(
         )
         .await
         .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-
+        
     Ok(Json(user))
 }
 
