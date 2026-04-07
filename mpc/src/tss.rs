@@ -1,13 +1,12 @@
 use std::collections::BTreeMap;
 use frost_ed25519::{self as frost, keys::dkg::round1::{Package, SecretPackage}, round1::{SigningCommitments, SigningNonces}, round2::SignatureShare} ;
 use frost::{
-    Identifier, 
-    keys::{KeyPackage,PublicKeyPackage, dkg},
-    round1,round2,
+    Identifier,
+    keys::{KeyPackage, PublicKeyPackage, dkg},
     Signature, SigningPackage
 };
 
-use rand::{rngs, thread_rng};
+use rand::rngs;
 
 
 pub const MAX_SIGNERS : u16 = 3;

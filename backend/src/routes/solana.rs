@@ -5,12 +5,15 @@ use axum::{
     extract::{Query, State},
     http::StatusCode,
 };
-use serde::{Deserialize, Serialize, de};
+use base64::Engine;
+use serde::{Deserialize, Serialize};
 use solana_client::rpc_client::RpcClient;
 use solana_sdk::{
-    lamports,
-    pubkey::{self, Pubkey},
+    pubkey::Pubkey,
+    transaction::Transaction,
+    message::Message,
 };
+
 use store::Store;
 
 use crate::routes::{Claims, mpc::orchestrate_signing};
@@ -98,7 +101,7 @@ pub async fn get_quote(
 
 #[derive(Serialize)]
 pub struct SwapResponse {
-    pub tx_btyes: String,
+    pub tx_hash: String,
 }
 
 pub async fn swap_handler(
@@ -163,7 +166,6 @@ pub async fn swap_handler(
         StatusCode::INTERNAL_SERVER_ERROR,
         "No transaction in order response".to_string(),
     ))?;
-    use base64::Engine;
     let tx_bytes = base64::engine::general_purpose::STANDARD
         .decode(tx_bytes_str)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -173,7 +175,7 @@ pub async fn swap_handler(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     //  POST /execute — submit signed tx
-    let execute_res: serde_json::Value = client
+    let _execute_res: serde_json::Value = client
         .post("https://api.jup.ag/swap/v2/execute")
         .header("x-api-key", &api_key)
         .json(&serde_json::json!({
@@ -188,6 +190,62 @@ pub async fn swap_handler(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     Ok(Json(SwapResponse {
-        tx_btyes: signature,
+        tx_hash: signature,
     }))
+}
+
+#[derive(Deserialize)]
+pub struct SendRequest {
+    pub to_address: String,    // recipient Solana address
+    pub amount: u64,           // lamports (SOL) ya smallest unit (SPL)
+    pub mint: Option<String>,  // None = SOL transfer, Some = SPL token transfer
+}
+
+
+#[derive(Serialize)]
+pub struct SendResponse {
+    pub signature: String,
+}
+
+pub async fn send_handler(
+    State(store): State<Store>,
+    claims: Claims,
+    Json(payload): Json<SendRequest>,
+) -> Result<Json<SendResponse>, (StatusCode, String)> {
+
+    // Step 1: Get user's public key (from address)
+    let user_id = claims.get_sub().map_err(|e| (StatusCode::BAD_REQUEST, e))?;
+    let user = store.get_user_by_id(&user_id).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    let from_str = user.get_pubkey()
+        .ok_or((StatusCode::BAD_REQUEST, "No wallet found".to_string()))?;
+
+    let from = Pubkey::from_str(from_str)
+        .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid from address".to_string()))?;
+    let to = Pubkey::from_str(&payload.to_address)
+        .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid to address".to_string()))?;
+
+    // Step 2: Build transfer instruction
+    let instruction = solana_system_interface::instruction::transfer(&from, &to, payload.amount);
+
+    // Step 3: Get recent blockhash
+    let rpc_url = std::env::var("SOLANA_RPC").expect("RPC url must be there");
+    let rpc_client = RpcClient::new(rpc_url);
+    let blockhash = rpc_client.get_latest_blockhash()
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    // Step 4: Build unsigned transaction
+    let message = Message::new(&[instruction], Some(&from));
+    let mut tx = Transaction::new_unsigned(message);
+    tx.message.recent_blockhash = blockhash;
+
+    // Step 5: Serialize → MPC signing
+    let tx_bytes = bincode::serialize(&tx)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    let signature = orchestrate_signing(user_id, tx_bytes)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    Ok(Json(SendResponse { signature }))
 }

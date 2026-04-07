@@ -381,6 +381,7 @@ dependencies = [
  "axum",
  "base64 0.22.1",
  "bcrypt",
+ "bincode",
  "chrono",
  "dotenvy",
  "jsonwebtoken",
@@ -389,6 +390,7 @@ dependencies = [
  "serde_json",
  "solana-client",
  "solana-sdk",
+ "solana-system-interface 3.1.0",
  "store",
  "tokio",
  "tower-http",
@@ -5169,7 +5171,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a95a6f2e23ed861d6444ad4a6d6896c418d7d101b960787e65a8e33157cee81b"
 dependencies = [
  "num-traits",
+ "serde",
+ "serde_derive",
  "solana-address 2.3.0",
+ "solana-instruction",
  "solana-msg",
  "solana-program-error",
 ]

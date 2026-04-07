@@ -10,7 +10,7 @@ impl FromRequestParts<Store> for Claims {
 
     async fn from_request_parts(
             parts: &mut axum::http::request::Parts,
-            state: &Store,
+            _state: &Store,
         ) -> Result<Self, Self::Rejection> {
             
         let secret = std::env::var("JWT_SECRET").map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR,"JWT_SECRET not set".to_string()))?;
